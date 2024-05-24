@@ -1,0 +1,13 @@
+[package]
+name = "opentsdb-auth-proxy"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.6.0"
+glob-match = "0.2.1"
+reqwest = "0.12.4"
+serde = { version = "1.0.202", features = ["serde_derive"] }
+serde_json = "1.0.117"
+serde_yaml = "0.9.34"
+sha2 = "0.10.8"

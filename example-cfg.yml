@@ -1,0 +1,21 @@
+clients:
+  - name: pyranometer
+    metrics:
+    - irradiance
+    - temperature
+    auth:
+      type: sha256
+      hash: ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb # a
+  - name: tgbt
+    metrics:
+    - testproxy.*
+    auth:
+      type: sha256
+      hash: ac790471b321143716e7773d589af923236ebdd435ba17c671df3558becc5154 # 7a5becc5b5bb581522fd0bb8891bb99a70275620
+
+
+config:
+  opentsdb:
+    url: http://opentsdb/api
+  server:
+    port: 8080
