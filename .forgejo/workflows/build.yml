@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+
+jobs:
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Forge Hub
+        uses: docker/login-action@v3
+        with:
+          registry: forge.k3s.fr
+          username: ${{ secrets.FORGEHUB_USERNAME }}
+          password: ${{ secrets.FORGEHUB_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Forge hub
+        id: metaforge
+        uses: https://github.com/docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: forge.k3s.fr/frank/opentsdb-auth-proxy
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.metaforge.outputs.tags }}
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Dockerhub
+        id: metadockerhub
+        uses: https://github.com/docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: frankkkkk/opentsdb-auth-proxy
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.metadockerhub.outputs.tags }}
