@@ -47,6 +47,14 @@ if the token is reasonably random.
 
 To be implemented; but don't do it.
 
+
+## Environment variables
+
+The following env variables are supported:
+
+- `CONFIG_FILE` : the location of the config file
+- `OPENTSDB_URL` (in this case, don't set it in the config file)
+
 ## Notes about exposing OpenTSDB
 
 Currently, OpenTSDB does not support authentication. If you run opentsdb in a k8s
