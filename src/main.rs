@@ -33,7 +33,7 @@ struct OtsdbData {
     metric: String,
     value: OtsdbValue,
     timestamp: i64,
-    tags: HashMap<String, String>,
+    tags: HashMap<String, OtsdbValue>,
 }
 
 const CONFIG_FILE: &str = "config.yaml";
