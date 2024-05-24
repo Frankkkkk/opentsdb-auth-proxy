@@ -43,7 +43,6 @@ async fn put_post(
     qs: web::Query<QSParams>,
     body: web::Json<OtsdbData>,
 ) -> impl Responder {
-    println!("Body: {:?}", body);
     let authenticated_client = config::try_authenticate_client(&shared.cfg.clients, &qs.token);
 
     if authenticated_client.is_none() {
@@ -59,12 +58,9 @@ async fn put_post(
             client.metrics.join(", ")
         ));
     }
-    println!("Client: {:?}", client);
 
     let post_url = format!("{}put", shared.cfg.config.opentsdb.url);
     let otsdb_body = serde_json::to_string(&body).unwrap();
-
-    println!("POST URL: {}", post_url);
 
     let response = shared
         .web_client
@@ -91,7 +87,7 @@ async fn main() -> std::io::Result<()> {
     let cfg_file = env::var("CONFIG_FILE").unwrap_or(CONFIG_FILE.to_string());
     let cfg = config::load_config_file(&cfg_file);
 
-    println!("Config: {:?}", cfg);
+    println!("Loaded config: {:#?}", cfg);
     let server_port = cfg.config.server.port.clone();
 
     let web_client = Client::new();
