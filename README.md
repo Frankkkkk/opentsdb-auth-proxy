@@ -10,6 +10,15 @@ token.
 If the token matches the host and the metric matches the list of allowed metrics,
 then the request is forwarded to the opentsdb server.
 
+
+## Images
+
+You can find the images on:
+
+- the dockerhub as [`frankkkkk/opentsdb-auth-proxy`](https://hub.docker.com/r/frankkkkk/opentsdb-auth-proxy)
+- my hub: [`forge.k3s.fr/frankkkkk/opentsdb-auth-proxy`](https://forge.k3s.fr/frank/-/packages/container/opentsdb-auth-proxy/main)
+
+
 ## Configuration
 
 Take a look at the provided [sample configuration](./example-cfg.yml)
