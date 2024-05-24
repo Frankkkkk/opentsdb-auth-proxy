@@ -70,6 +70,10 @@ async fn put_post(
     let post_url = format!("{}put", shared.cfg.config.opentsdb.url);
     let otsdb_body = serde_json::to_string(&body).unwrap();
 
+    info!(
+        "{} sent metric {}={:?}",
+        client.name, body.metric, body.value
+    );
     debug!("POST {} with body: {}", post_url, otsdb_body);
 
     let response = shared
