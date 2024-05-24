@@ -16,6 +16,6 @@ clients:
 
 config:
   opentsdb:
-    url: http://opentsdb/api
+    url: http://opentsdb/api/
   server:
     port: 8080
