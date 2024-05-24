@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - docker
+    tags:
+      - '*'
 
 jobs:
   docker-build:
@@ -22,21 +24,31 @@ jobs:
           registry: forge.k3s.fr
           username: ${{ secrets.FORGEHUB_USERNAME }}
           password: ${{ secrets.FORGEHUB_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Forge hub
+        id: metaforge
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: forge.k3s.fr/frank/opentsdb-auth-proxy
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: forge.k3s.fr/frank/opentsdb-auth-proxy:latest
+          tags: ${{ steps.metaforge.outputs.tags }}
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Extract metadata (tags, labels) for Forge hub
+        id: metadockerhub
+        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        with:
+          images: frankkkkk/opentsdb-auth-proxy
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: frankkkkk/opentsdb-auth-proxy:latest
+          tags: ${{ steps.metadockerhub.outputs.tags }}
