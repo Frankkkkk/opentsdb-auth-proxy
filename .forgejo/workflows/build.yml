@@ -26,7 +26,7 @@ jobs:
           password: ${{ secrets.FORGEHUB_PASSWORD }}
       - name: Extract metadata (tags, labels) for Forge hub
         id: metaforge
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        uses: github.com/docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
           images: forge.k3s.fr/frank/opentsdb-auth-proxy
       - name: Build and push
@@ -43,7 +43,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Extract metadata (tags, labels) for Forge hub
         id: metadockerhub
-        uses: docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
+        uses: github.com/docker/metadata-action@9ec57ed1fcdbf14dcef7dfbe97b2010124a938b7
         with:
           images: frankkkkk/opentsdb-auth-proxy
       - name: Build and push
