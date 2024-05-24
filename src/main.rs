@@ -20,10 +20,18 @@ struct QSParams {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+enum OtsdbValue {
+    String(String),
+    Integer(i64),
+    Float(f64),
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 struct OtsdbData {
     metric: String,
-    value: String,
-    timestamp: f64,
+    value: OtsdbValue,
+    timestamp: i64,
     tags: HashMap<String, String>,
 }
 
