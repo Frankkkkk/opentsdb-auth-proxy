@@ -1,6 +1,7 @@
 use actix_web::http::StatusCode;
 use actix_web::middleware::Logger;
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{error, web, App, HttpResponse, HttpServer, Responder};
+use log::{debug, error, info, log_enabled, Level};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -46,21 +47,30 @@ async fn put_post(
     let authenticated_client = config::try_authenticate_client(&shared.cfg.clients, &qs.token);
 
     if authenticated_client.is_none() {
-        return HttpResponse::Unauthorized().body("Unauthorized. Please specify a valid token.");
+        let emsg = format!(
+            "Unauthorized. Unknown token: {}. Please specify a valid tokne.",
+            qs.token
+        );
+        error!("{}", emsg);
+        return HttpResponse::Unauthorized().body(emsg);
     }
 
     let client = authenticated_client.unwrap();
 
     if !client.can_write(&body.metric) {
-        return HttpResponse::Forbidden().body(format!(
+        let emsg = format!(
             "Not allowed to write metric `{}`. Allowed metrics: {}",
             body.metric,
             client.metrics.join(", ")
-        ));
+        );
+        error!("{}", emsg);
+        return HttpResponse::Forbidden().body(format!("{}", emsg));
     }
 
     let post_url = format!("{}put", shared.cfg.config.opentsdb.url);
     let otsdb_body = serde_json::to_string(&body).unwrap();
+
+    debug!("POST {} with body: {}", post_url, otsdb_body);
 
     let response = shared
         .web_client
@@ -74,11 +84,16 @@ async fn put_post(
             let status = resp.status();
 
             let body = resp.text().await.unwrap_or_else(|_| "".to_string());
+            debug!("OpenTSDB response {}: {}", status, body);
             let sstatus =
                 StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+
             HttpResponse::Ok().status(sstatus).body(body)
         }
-        Err(err) => HttpResponse::InternalServerError().body(format!("Error: {}", err)),
+        Err(err) => {
+            error!("OpenTSDB error: {}", err);
+            HttpResponse::InternalServerError().body(format!("Proxy error: {}", err))
+        }
     }
 }
 
@@ -86,6 +101,8 @@ async fn put_post(
 async fn main() -> std::io::Result<()> {
     let cfg_file = env::var("CONFIG_FILE").unwrap_or(CONFIG_FILE.to_string());
     let cfg = config::load_config_file(&cfg_file);
+
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
 
     println!("Loaded config: {:#?}", cfg);
     let server_port = cfg.config.server.port.clone();
@@ -100,11 +117,10 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .app_data(client_data.clone()) //.client_data.clone())
+            .app_data(client_data.clone())
             .app_data(web::JsonConfig::default().content_type_required(false))
-            .wrap(Logger::default())
+            .wrap(Logger::new("%r %s")) // k8s already logs timestamp
             .service(put_post)
-        //.route("/put", web::post().to(put_post))
     })
     .bind(format!("[::]:{}", server_port))?
     .run()
