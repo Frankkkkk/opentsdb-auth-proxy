@@ -15,13 +15,36 @@ pub struct Config {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Client {
     pub name: String,
+    #[serde(default)]
     pub metrics: Vec<String>,
-    pub auth: Auth,
+    #[serde(default)]
+    pub read_metrics: Vec<String>,
+    #[serde(default)]
+    pub write_metrics: Vec<String>,
+    pub auth: Option<Auth>,
 }
 
 impl Client {
     pub fn can_write(&self, metric: &str) -> bool {
         for m in &self.metrics {
+            if glob_match(m, metric) {
+                return true;
+            }
+        }
+        for m in &self.write_metrics {
+            if glob_match(m, metric) {
+                return true;
+            }
+        }
+        false
+    }
+    pub fn can_read(&self, metric: &str) -> bool {
+        for m in &self.metrics {
+            if glob_match(m, metric) {
+                return true;
+            }
+        }
+        for m in &self.read_metrics {
             if glob_match(m, metric) {
                 return true;
             }
@@ -34,7 +57,7 @@ impl Client {
 pub struct Auth {
     #[serde(rename = "type")]
     pub auth_type: String,
-    pub hash: String,
+    pub hash: Option<String>,
 }
 
 impl Auth {
@@ -44,7 +67,10 @@ impl Auth {
                 let mut hasher = Sha256::new();
                 hasher.update(token);
                 let result = hasher.finalize();
-                format!("{:x}", result) == self.hash
+                if let Some(hash) = &self.hash {
+                    return format!("{:x}", result) == *hash;
+                }
+                false
             }
             _ => false,
         }
@@ -81,7 +107,7 @@ fn default_opentsdb_url() -> String {
 
 pub fn load_config_file(filename: &str) -> Config {
     let yaml_content = fs::read_to_string(filename)
-        .unwrap_or_else(|_| panic!("Unable to read config file {}", filename));
+        .unwrap_or_else(|_| panic!("Unable to read config file `{}`", filename));
     let config: Config = serde_yaml::from_str(&yaml_content).expect("Unable to parse YAML");
     config
 }
@@ -89,5 +115,5 @@ pub fn load_config_file(filename: &str) -> Config {
 pub fn try_authenticate_client<'a>(clients: &'a [Client], token: &str) -> Option<&'a Client> {
     clients
         .iter()
-        .find(|client| client.auth.is_valid_token(token))
+        .find(|client| client.auth.is_some() && client.auth.as_ref().unwrap().is_valid_token(token))
 }
