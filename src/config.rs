@@ -44,7 +44,7 @@ impl Auth {
                 let mut hasher = Sha256::new();
                 hasher.update(token);
                 let result = hasher.finalize();
-                return format!("{:x}", result) == self.hash;
+                format!("{:x}", result) == self.hash
             }
             _ => false,
         }
@@ -81,7 +81,7 @@ fn default_opentsdb_url() -> String {
 
 pub fn load_config_file(filename: &str) -> Config {
     let yaml_content = fs::read_to_string(filename)
-        .expect(format!("Unable to read config file {}", filename).as_str());
+        .unwrap_or_else(|_| panic!("Unable to read config file {}", filename));
     let config: Config = serde_yaml::from_str(&yaml_content).expect("Unable to parse YAML");
     config
 }

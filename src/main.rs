@@ -1,7 +1,7 @@
 use actix_web::http::StatusCode;
 use actix_web::middleware::Logger;
-use actix_web::{error, web, App, HttpResponse, HttpServer, Responder};
-use log::{debug, error, info, log_enabled, Level};
+use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use log::{debug, error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -64,7 +64,7 @@ async fn put_post(
             client.metrics.join(", ")
         );
         error!("{}", emsg);
-        return HttpResponse::Forbidden().body(format!("{}", emsg));
+        return HttpResponse::Forbidden().body(emsg.to_string());
     }
 
     let post_url = format!("{}put", shared.cfg.config.opentsdb.url);
@@ -113,10 +113,7 @@ async fn main() -> std::io::Result<()> {
 
     let web_client = Client::new();
 
-    let shared = ClientData {
-        web_client: web_client,
-        cfg: cfg,
-    };
+    let shared = ClientData { web_client, cfg };
     let client_data = web::Data::new(shared);
 
     HttpServer::new(move || {
