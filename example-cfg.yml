@@ -4,6 +4,8 @@ clients:
     write_metrics:
     - irradiance
     - temperature
+    read_metrics:
+    - weather.*
     auth:
       type: sha256
       hash: ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb # a
@@ -32,16 +34,9 @@ clients:
     auth:
       # ...
 
-  # Anonymous login
-  - name: public_consumer
-    read_metrics:
-    - weather.*
-    auth:
-      type: anonymous
-
 
 config:
   opentsdb:
-    url: http://opentsdb/api/
+    url: http://192.168.30.2/api/
   server:
     port: 8080

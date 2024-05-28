@@ -16,24 +16,29 @@ struct ClientData {
 }
 
 #[derive(Debug, Deserialize)]
-struct QSParams {
+struct QPutParams {
+    token: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct OtsdbPutData {
+    metric: String,
+    value: StringIntFloat,
+    timestamp: i64,
+    tags: HashMap<String, StringIntFloat>,
+}
+
+#[derive(Debug, Deserialize)]
+struct QQueryParams {
     token: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(untagged)]
-enum OtsdbValue {
+enum StringIntFloat {
     String(String),
     Integer(i64),
     Float(f64),
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-struct OtsdbData {
-    metric: String,
-    value: OtsdbValue,
-    timestamp: i64,
-    tags: HashMap<String, OtsdbValue>,
 }
 
 const CONFIG_FILE: &str = "config.yaml";
@@ -41,8 +46,8 @@ const CONFIG_FILE: &str = "config.yaml";
 #[actix_web::post("/put")]
 async fn put_post(
     shared: web::Data<ClientData>,
-    qs: web::Query<QSParams>,
-    body: web::Json<OtsdbData>,
+    qs: web::Query<QPutParams>,
+    body: web::Json<OtsdbPutData>,
 ) -> impl Responder {
     let authenticated_client = config::try_authenticate_client(&shared.cfg.clients, &qs.token);
 
