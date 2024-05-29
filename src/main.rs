@@ -30,7 +30,18 @@ struct OtsdbPutData {
 
 #[derive(Debug, Deserialize)]
 struct QQueryParams {
+    #[serde(default)]
     token: String,
+
+    #[serde(flatten)]
+    q: OpentsdbQuery,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+struct OpentsdbQuery {
+    start: StringInt,
+    end: Option<StringInt>,
+    m: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -41,7 +52,20 @@ enum StringIntFloat {
     Float(f64),
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(untagged)]
+enum StringInt {
+    String(String),
+    Integer(i64),
+}
+
 const CONFIG_FILE: &str = "config.yaml";
+
+fn get_metric(m: &String) -> String {
+    let mut metric = m.clone();
+    let pts: Vec<&str> = metric.split(":").collect();
+    pts[1].to_string()
+}
 
 #[actix_web::post("/put")]
 async fn put_post(
@@ -64,12 +88,13 @@ async fn put_post(
 
     if !client.can_write(&body.metric) {
         let emsg = format!(
-            "Not allowed to write metric `{}`. Allowed metrics: {}",
+            "Not allowed to write metric `{}`. Allowed metrics: {} and {}",
             body.metric,
-            client.metrics.join(", ")
+            client.metrics.join(", "),
+            client.write_metrics.join(", ") // XXX make it nicer
         );
         error!("{}", emsg);
-        return HttpResponse::Forbidden().body(emsg.to_string());
+        return HttpResponse::Forbidden().body(emsg);
     }
 
     let post_url = format!("{}put", shared.cfg.config.opentsdb.url);
@@ -87,6 +112,57 @@ async fn put_post(
         .body(otsdb_body)
         .send()
         .await;
+
+    match response {
+        Ok(resp) => {
+            let status = resp.status();
+
+            let body = resp.text().await.unwrap_or_else(|_| "".to_string());
+            debug!("OpenTSDB response {}: {}", status, body);
+            let sstatus =
+                StatusCode::from_u16(status.as_u16()).unwrap_or(StatusCode::INTERNAL_SERVER_ERROR);
+
+            HttpResponse::Ok().status(sstatus).body(body)
+        }
+        Err(err) => {
+            error!("OpenTSDB error: {}", err);
+            HttpResponse::InternalServerError().body(format!("Proxy error: {}", err))
+        }
+    }
+}
+
+#[actix_web::get("/query")]
+async fn query_get(shared: web::Data<ClientData>, qs: web::Query<QQueryParams>) -> impl Responder {
+    let authenticated_client = config::try_authenticate_client(&shared.cfg.clients, &qs.token);
+
+    if authenticated_client.is_none() {
+        let emsg = format!(
+            "Unauthorized. Unknown token: {}. Please specify a valid tokne.",
+            qs.token
+        );
+        error!("{}", emsg);
+        return HttpResponse::Unauthorized().body(emsg);
+    }
+
+    let client = authenticated_client.unwrap();
+
+    println!("Query get: {:?}", qs);
+    let metric = get_metric(&qs.q.m);
+
+    if !client.can_read(&metric) {
+        let emsg = format!("Not allowed to read metric `{}`", metric);
+        error!("{}", emsg);
+        return HttpResponse::Forbidden().body(emsg);
+    }
+
+    let get_url = format!("{}query", shared.cfg.config.opentsdb.url);
+    //let otsdb_body = serde_json::to_string(&body).unwrap();
+    //let query_string
+
+    info!("{} get metric {}", client.name, metric);
+    debug!("GET {} with qs: {:?}", get_url, qs.q);
+
+    let response = shared.web_client.get(get_url).query(&qs.q).send().await;
 
     match response {
         Ok(resp) => {
@@ -127,6 +203,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::JsonConfig::default().content_type_required(false))
             .wrap(Logger::new("%r %s")) // k8s already logs timestamp
             .service(put_post)
+            .service(query_get)
     })
     .bind(format!("[::]:{}", server_port))?
     .run()

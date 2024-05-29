@@ -57,7 +57,7 @@ impl Client {
 pub struct Auth {
     #[serde(rename = "type")]
     pub auth_type: String,
-    pub hash: Option<String>,
+    pub hash: String,
 }
 
 impl Auth {
@@ -67,10 +67,7 @@ impl Auth {
                 let mut hasher = Sha256::new();
                 hasher.update(token);
                 let result = hasher.finalize();
-                if let Some(hash) = &self.hash {
-                    return format!("{:x}", result) == *hash;
-                }
-                false
+                format!("{:x}", result) == self.hash
             }
             _ => false,
         }
