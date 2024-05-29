@@ -1,7 +1,10 @@
 # OpenTSDB Auth Proxy
 
-This is a simple proxy for the [OpenTSDB](https://github.com/OpenTSDB/opentsdb) 
+This is a simple read/write proxy for the [OpenTSDB](https://github.com/OpenTSDB/opentsdb) 
 time series database. It handles authentication and authorization.
+
+**Warning**: This proxy is currently half baked. It works for my needs though.
+if you need more features, don't hesitate to make a PR ;-)
 
 This proxy can be publicly exposed. When sending data to opentsdb, set the endpoint
 to this proxy instead. Each client will send the data alongside an authentication
@@ -10,8 +13,24 @@ token.
 If the token matches the host and the metric matches the list of allowed metrics,
 then the request is forwarded to the opentsdb server.
 
+Supported routes:
 
-## Images
+- POST `/put`
+- GET `/query`
+
+Supported authentications:
+
+- sha256
+
+Supported authorizations:
+
+- `metrics`: read & write
+- `read_metrics`
+- `write_metrics`
+
+
+
+## Container images
 
 You can find the images on:
 
@@ -25,10 +44,9 @@ Take a look at the provided [sample configuration](./example-cfg.yml)
 
 ### Authentication tokens
 
-Right now, two authentication tokens are supported:
+Right now, one authentication token is supported:
 
 - sha256
-- plain (not recommended)
 
 #### Sha256
 
